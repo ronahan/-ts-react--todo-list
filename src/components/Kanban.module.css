@@ -1,0 +1,38 @@
+.board {
+  display: flex;
+  gap: 16px;
+  max-width: 900px;
+  margin: 24px auto;
+}
+.column {
+  flex: 1;                    /* 3칸 균등 너비 */
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 200px;
+}
+.cardList {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;     /* 카드 세로로 쌓기 */
+  gap: 8px;
+}
+.card {
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: grab;               /* 끌 수 있어 보이게 손모양 */
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* 기존 스타일 유지 */
+}
+.cardDate {
+  font-size: 11px;
+  color: #888;
+}

@@ -1,0 +1,21 @@
+.dim{
+    position: fixed;
+    inset:0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.modal{
+    background-color : #fff;
+    padding: 24px;
+    border-radius: 8px;
+    min-width: 280px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.buttons{
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}

@@ -1,0 +1,45 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #fafafa;
+  color: #222;
+}
+.wrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.top {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;   /* 위쪽 맞춰 정렬 */
+}
+.dayDetail {
+  flex: 1;                   /* 남는 가로 공간 차지 (오른쪽) */
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+}
+.calendar {
+  width: 360px;          /* 560 → 360 */
+  flex-shrink: 0;        /* topRow에서 안 찌그러지게 */
+}
+.cell {
+  min-height: 56px;      /* 72 → 56 */
+  /* 나머지 그대로 */
+}
+.dayDetail ul {
+  list-style: none;   /* ← 앞의 점 제거 */
+  padding: 0;         /* ← 점 자리 왼쪽 여백도 제거 */
+  margin: 12px 0 0;
+}
+.dayDetail li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;    /* 글씨 좀 작게 */
+}
