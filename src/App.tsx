@@ -1,75 +1,75 @@
-import {useState, useEffect} from 'react';
-import type {Todo, TodoStatus} from './types/todo';
-import {STATUS_LABELS} from './types/todo';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Todo, TodoStatus } from './types/todo';
+import { STATUS_LABELS } from './types/todo';
+import { getTodos, addTodo, updateTodo, deleteTodo } from './api';
 import ConfirmModal from './components/ConfirmModal';
 import Calendar from './components/Calendar';
 import Kanban from "./components/Kanban";
 
 function App() {
-  const [input, setInput] =useState("");
+  const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [todos, setTodos] = useState<Todo[]>(() => {
-    const saved = localStorage.getItem("todos");
-    return saved ? JSON.parse(saved) : [];
+
+  const queryClient = useQueryClient();
+
+  // 읽기 — 서버에서 목록 가져오기 (localStorage 대체)
+  const { data: todos = [] } = useQuery({
+    queryKey: ["todos"],
+    queryFn: getTodos,
   });
-  const changeStatus = (id:string, status : TodoStatus) => {
-    setTodos(todos.map((todo)=> (todo.id ===id ? {...todo, status} : todo)));
-  };
-  useEffect( ()=>{
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
-  const handleAdd =() => {
-    if (!selectedDate) return; // 선택된 날짜가 없으면 추가하지 않음
+
+  // 쓰기 — 성공하면 목록 다시 불러오기(invalidate)
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["todos"] });
+  const addM    = useMutation({ mutationFn: addTodo, onSuccess: invalidate });
+  const updateM = useMutation({ mutationFn: (v: { id: string; patch: { title: string; status: TodoStatus } }) => updateTodo(v.id, v.patch), onSuccess: invalidate });
+  const deleteM = useMutation({ mutationFn: deleteTodo, onSuccess: invalidate });
+
+  const handleAdd = () => {
+    if (!selectedDate) return;
     if (input.trim() === "") return;
-    const newTodo : Todo ={
-      id : crypto.randomUUID(),
-      title : input,
-      date  :selectedDate,
-      status : "todo",
-      completed :false, 
-    };
-    setTodos([...todos, newTodo]);
+    addM.mutate({ title: input, date: selectedDate, status: "todo" });
     setInput("");
-  }
-  const startEdit = (id:string, currentTitle : string) => {
+  };
+  const startEdit = (id: string, currentTitle: string) => {
     setEditingId(id);
     setEditText(currentTitle);
-  }
-  const saveEdit = (id:string) => {
+  };
+  const saveEdit = (id: string) => {
     if (editText.trim() === "") return;
-    setTodos(todos.map((todo)=> (todo.id === id? {...todo, title:editText} : todo)));
+    const t = todos.find((x) => x.id === id);
+    updateM.mutate({ id, patch: { title: editText, status: t?.status ?? "todo" } });
     setEditingId(null);
-  }
-  const cancelEdit = ()=> {
-    setEditingId(null);
-  }
- const askDelete = (id: string) =>{
-  setDeleteTargetId(id);
- }
- const confirmDelete =()=>{
-  setTodos(todos.filter((todo)=>todo.id !== deleteTargetId));
-  setDeleteTargetId(null);
- }
- const closeModal = () => {
-  setDeleteTargetId(null);
-};
-const month = selectedDate ? Number(selectedDate.split("-")[1]) : 0;
-const day = selectedDate ? Number(selectedDate.split("-")[2]) : 0;
+  };
+  const cancelEdit = () => setEditingId(null);
+  const askDelete = (id: string) => setDeleteTargetId(id);
+  const confirmDelete = () => {
+    if (deleteTargetId) deleteM.mutate(deleteTargetId);
+    setDeleteTargetId(null);
+  };
+  const closeModal = () => setDeleteTargetId(null);
+  const changeStatus = (id: string, status: TodoStatus) => {
+    const t = todos.find((x) => x.id === id);
+    updateM.mutate({ id, patch: { title: t?.title ?? "", status } });
+  };
+
+  const month = selectedDate ? Number(selectedDate.split("-")[1]) : 0;
+  const day = selectedDate ? Number(selectedDate.split("-")[2]) : 0;
 
   return (
     <>
       <main className="wrapper">
-        <h1>할일 관리</h1>      
+        <h1>할일 관리</h1>
         <div className="top">
           <Calendar todos={todos} onSelectDate={setSelectedDate} />
           {selectedDate && (
           <section className="dayDetail">
             <h2>{month}월 {day}일의 할일</h2>
             <div className="formWrap">
-              <input id="new-todo" type="text" value={input} onChange={(e) => setInput (e.target.value)} placeholder={`${month}월 ${day}일의 할일을 입력하세요`}/>
+              <input id="new-todo" type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={`${month}월 ${day}일의 할일을 입력하세요`}/>
               <button type="button" onClick={handleAdd}>추가</button>
             </div>
             <ul>
@@ -79,11 +79,7 @@ const day = selectedDate ? Number(selectedDate.split("-")[2]) : 0;
                   <li key={todo.id}>
                     {editingId === todo.id ? (
                       <>
-                        <input
-                          type="text"
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                        />
+                        <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
                         <button type="button" onClick={() => saveEdit(todo.id)}>저장</button>
                         <button type="button" onClick={cancelEdit}>취소</button>
                       </>
@@ -102,16 +98,11 @@ const day = selectedDate ? Number(selectedDate.split("-")[2]) : 0;
         </div>
         <Kanban todos={todos} onChangeStatus={changeStatus} />
         {deleteTargetId && (
-          <ConfirmModal
-            message="정말 삭제하시겠습니까?"
-            onConfirm={confirmDelete}
-            onCancel={closeModal}
-          />
+          <ConfirmModal message="정말 삭제하시겠습니까?" onConfirm={confirmDelete} onCancel={closeModal} />
         )}
-
       </main>
     </>
-  )
+  );
 }
 
 export default App;
