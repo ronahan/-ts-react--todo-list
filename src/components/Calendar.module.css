@@ -38,11 +38,20 @@
 }
 .todoItem {
   font-size: 11px;
-  background: #e8f0fe;
+  background: #e8f0fe;  /* 할 일(todo) 기본 - 하늘색 */
   border-radius: 4px;
   padding: 2px 4px;
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;  /* 길면 ...으로 자름 */
+}
+/* 상태별 색 - 진행중/완료만 기본(하늘색) 위에 덧씌움 */
+.doing {
+  background: #4285f4;  /* 진행 중 - 파랑 */
+  color: #fff;
+}
+.done {
+  background: #34a853;  /* 완료 - 초록 */
+  color: #fff;
 }

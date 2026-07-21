@@ -1,6 +1,13 @@
-import type {Todo} from '../types/todo';
+import type {Todo, TodoStatus} from '../types/todo';
 import styles from './Calendar.module.css';
 import { useState } from 'react';
+
+// 상태별 색 클래스 (todo=기본 하늘색이라 빈 값, doing=파랑, done=초록)
+const STATUS_STYLE: Record<TodoStatus, string> = {
+  todo: '',
+  doing: styles.doing,
+  done: styles.done,
+};
 
 interface CalendarProps {
   todos: Todo[];
@@ -40,7 +47,7 @@ function Calendar({todos, onSelectDate}: CalendarProps) {
                   <span className={styles.dayNum}>{day}</span>
                   <ul className={styles.todoList}>
                     {dayTodos.map((todo) => (
-                      <li key={todo.id} className = {styles.todoItem}>
+                      <li key={todo.id} className={`${styles.todoItem} ${STATUS_STYLE[todo.status]}`}>
                         {todo.title}
                       </li>
                     ))}

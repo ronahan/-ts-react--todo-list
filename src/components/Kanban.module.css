@@ -36,3 +36,24 @@
   font-size: 11px;
   color: #888;
 }
+/* 상태 뱃지 - 카드 왼쪽 위에 작게 */
+.badge {
+  align-self: flex-start;   /* 글자만큼만 너비 차지 */
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 10px;
+  padding: 1px 8px;
+  margin-bottom: 2px;
+}
+.badgeTodo {
+  background: #e8f0fe;      /* 할 일 - 하늘색 */
+  color: #1a3b8b;
+}
+.badgeDoing {
+  background: #4285f4;      /* 진행 중 - 파랑 */
+  color: #fff;
+}
+.badgeDone {
+  background: #34a853;      /* 완료 - 초록 */
+  color: #fff;
+}

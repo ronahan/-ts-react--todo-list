@@ -7,6 +7,12 @@ interface KanbanProps {
     onChangeStatus : (id:string, statu: TodoStatus) => void;
 }
 const COLUMNS:TodoStatus[] = ["todo", "doing", "done"];
+// 뱃지 색 클래스 (캘린더와 동일: todo=하늘, doing=파랑, done=초록)
+const BADGE_STYLE: Record<TodoStatus, string> = {
+    todo: styles.badgeTodo,
+    doing: styles.badgeDoing,
+    done: styles.badgeDone,
+};
 function Kanban({todos , onChangeStatus} : KanbanProps) {
     return (
         <section className={styles.board}> 
@@ -21,6 +27,7 @@ function Kanban({todos , onChangeStatus} : KanbanProps) {
                             .filter((todo) => todo.status === col)
                             .map((todo) => (
                                 <li key={todo.id} className={styles.card} draggable onDragStart={(e)=>{e.dataTransfer.setData("id", todo.id)}}>
+                                    <span className={`${styles.badge} ${BADGE_STYLE[todo.status]}`}>{STATUS_LABELS[todo.status]}</span>
                                     <span>{todo.title}</span>
                                     <small className={styles.cardDate}>{todo.date}</small>
                                 </li>
