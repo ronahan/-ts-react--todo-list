@@ -11,7 +11,7 @@ export async function addTodo(todo:{title:string; date :string; status :TodoStat
         headers:{"Content-Type": "application/json"},
         body : JSON.stringify(todo),
     });
-    return res.json;
+    return res.json();
 }
 export async function updateTodo(id:string, patch:{title: string; status: TodoStatus }) {
     const res = await fetch(`${BASE}/${id}`,{
