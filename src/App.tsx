@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState , useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Todo, TodoStatus } from './types/todo';
+import type { TodoStatus } from './types/todo';
 import { STATUS_LABELS } from './types/todo';
 import { getTodos, addTodo, updateTodo, deleteTodo, reorderTodos } from './api';
 import ConfirmModal from './components/ConfirmModal';
@@ -59,10 +59,11 @@ function App() {
   };
 
   // 선택한 날짜의 할일 - priority 낮은 순(위=1순위)으로 정렬
-  const dayTodos = todos
-    .filter((todo) => todo.date === selectedDate)
-    .sort((a, b) => a.priority - b.priority);
-
+  const dayTodos = useMemo( ()=> todos
+    .filter((t) => t.date === selectedDate)
+    .sort((a, b) => a.priority - b.priority),
+    [todos, selectedDate]
+  );
   // 드래그로 놓았을 때 - 새 순서 계산해서 서버 저장
   const handleDrop = (targetId: string) => {
     if (!dragId || dragId === targetId) return;
