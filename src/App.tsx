@@ -1,6 +1,6 @@
 import { useState , useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TodoStatus } from './types/todo';
+import type { Todo, TodoStatus } from './types/todo';
 import { STATUS_LABELS } from './types/todo';
 import { getTodos, addTodo, updateTodo, deleteTodo, reorderTodos } from './api';
 import ConfirmModal from './components/ConfirmModal';
@@ -13,6 +13,7 @@ function App() {
   const [editText, setEditText] = useState("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [viewDate, setViewDate] = useState(new Date());        // 캘린더가 지금 보고 있는 월
   const [dragId, setDragId] = useState<string | null>(null);   // 지금 끌고 있는 할일 id
 
   const queryClient = useQueryClient();
@@ -26,10 +27,37 @@ function App() {
   // 쓰기 — 성공하면 목록 다시 불러오기(invalidate)
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["todos"] });
   const addM    = useMutation({ mutationFn: addTodo, onSuccess: invalidate });
-  const updateM = useMutation({ mutationFn: (v: { id: string; patch: { title: string; status: TodoStatus } }) => updateTodo(v.id, v.patch), onSuccess: invalidate });
+  const updateM = useMutation({ 
+    mutationFn: (v: { id: string; patch: { title: string; status: TodoStatus } }) =>
+      updateTodo(v.id, v.patch),
+    onMutate : async (v) =>{
+      await queryClient.cancelQueries({queryKey:["todos"]});
+      const prev =queryClient.getQueryData(["todos"]);
+      queryClient.setQueryData(["todos"], (old:Todo[]) =>
+      old.map((t)=> (t.id === v.id ?{ ...t, ...v.patch} : t))
+      );
+      return {prev};
+    },
+    onError :(_e, _v, ctx) => queryClient.setQueryData(["todos"], ctx?.prev),
+    onSettled : ()=> queryClient.invalidateQueries({queryKey :["todos"]}),
+   });
   const deleteM = useMutation({ mutationFn: deleteTodo, onSuccess: invalidate });
-  const reorderM = useMutation({ mutationFn: reorderTodos, onSuccess: invalidate });
-
+  const reorderM = useMutation({
+    mutationFn: reorderTodos,
+    onMutate: async (ids: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ["todos"] });
+      const prev = queryClient.getQueryData<Todo[]>(["todos"]);
+      queryClient.setQueryData(["todos"], (old: Todo[]) => {
+        return old.map((t) => {
+          const i = ids.indexOf(t.id);
+          return i === -1 ? t : { ...t, priority: i };
+        });
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => queryClient.setQueryData(["todos"], ctx?.prev),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+  });
   const handleAdd = () => {
     if (!selectedDate) return;
     if (input.trim() === "") return;
@@ -64,6 +92,15 @@ function App() {
     .sort((a, b) => a.priority - b.priority),
     [todos, selectedDate]
   );
+  // 칸반용 — 미완료(할 일·진행 중)는 항상, 완료는 "완료한 달"이 보고 있는 달일 때만
+  const kanbanTodos = useMemo(() => {
+    const prefix = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
+    return todos.filter((t) => {
+      if (t.status !== "done") return true;
+      const when = t.completedAt ?? t.date;   // 완료일 기준
+      return when.startsWith(prefix);
+    });
+  }, [todos, viewDate]);
   // 드래그로 놓았을 때 - 새 순서 계산해서 서버 저장
   const handleDrop = (targetId: string) => {
     if (!dragId || dragId === targetId) return;
@@ -84,7 +121,7 @@ function App() {
       <main className="wrapper">
         <h1>할일 관리</h1>
         <div className="top">
-          <Calendar todos={todos} onSelectDate={setSelectedDate} />
+          <Calendar todos={todos} current={viewDate} onChangeMonth={setViewDate} onSelectDate={setSelectedDate} />
           {selectedDate && (
           <section className="dayDetail">
             <h2>{month}월 {day}일의 할일</h2>
@@ -120,7 +157,7 @@ function App() {
           </section>
         )}
         </div>
-        <Kanban todos={todos} onChangeStatus={changeStatus} />
+        <Kanban todos={kanbanTodos} onChangeStatus={changeStatus} />
         {deleteTargetId && (
           <ConfirmModal message="정말 삭제하시겠습니까?" onConfirm={confirmDelete} onCancel={closeModal} />
         )}

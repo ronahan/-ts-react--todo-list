@@ -1,6 +1,5 @@
 import type {Todo, TodoStatus} from '../types/todo';
 import styles from './Calendar.module.css';
-import { useState } from 'react';
 
 // 상태별 색 클래스 (todo=기본 하늘색이라 빈 값, doing=파랑, done=초록)
 const STATUS_STYLE: Record<TodoStatus, string> = {
@@ -11,11 +10,12 @@ const STATUS_STYLE: Record<TodoStatus, string> = {
 
 interface CalendarProps {
   todos: Todo[];
+  current: Date;
+  onChangeMonth: (date: Date) => void;
   onSelectDate:(date:string)=>void;
 }
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-function Calendar({todos, onSelectDate}: CalendarProps) {
-    const[current, setCurrent] = useState(new Date());
+function Calendar({todos, current, onChangeMonth, onSelectDate}: CalendarProps) {
     const year = current.getFullYear();
     const month = current.getMonth();
     const startWeekday = new Date(year, month, 1).getDay();
@@ -23,8 +23,8 @@ function Calendar({todos, onSelectDate}: CalendarProps) {
     const cells :(number | null)[] =[];
     for (let i =0; i<startWeekday; i++)cells.push(null);
     for (let d =1; d <= lastDate; d++) cells.push(d);
-    const prevMonth = ()=>{setCurrent(new Date(year, month -1, 1))};
-    const nextMonth = ()=>{setCurrent(new Date(year, month +1, 1))};
+    const prevMonth = ()=>{onChangeMonth(new Date(year, month -1, 1))};
+    const nextMonth = ()=>{onChangeMonth(new Date(year, month +1, 1))};
     return( 
         <section className={styles.calendar}>
             <header className={styles.head}>
@@ -41,7 +41,11 @@ function Calendar({todos, onSelectDate}: CalendarProps) {
                 return <div key={i} className={styles.cell}/>
               }
               const dateStr=`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              const dayTodos = todos.filter((todo)=>todo.date === dateStr);
+              // 완료된 할일은 완료한 날 칸에, 나머지는 시작일 칸에
+              const dayTodos = todos.filter((todo) => {
+                const cellDate = todo.status === "done" ? todo.completedAt ?? todo.date : todo.date;
+                return cellDate === dateStr;
+              });
               return (
                 <div key={i} className={styles.cell} onClick={() => onSelectDate(dateStr)}>
                   <span className={styles.dayNum}>{day}</span>

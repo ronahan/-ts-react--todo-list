@@ -5,6 +5,7 @@ export interface Todo {
   status: TodoStatus;
   completed: boolean;
   priority: number;   // 낮을수록 위(1순위). 같은 날짜 안에서의 순서
+  completedAt: string | null;   // 완료한 날짜(YYYY-MM-DD). 미완료면 null
 }
 export type TodoStatus = 'todo' | 'doing' | 'done';
 export const STATUS_LABELS:Record<TodoStatus,string>={
