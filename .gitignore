@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# SQLite 로컬 DB (서버 실행 시 자동 생성되는 데이터 파일)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
