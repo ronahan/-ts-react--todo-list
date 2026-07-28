@@ -41,18 +41,15 @@ function Calendar({todos, current, onChangeMonth, onSelectDate}: CalendarProps) 
                 return <div key={i} className={styles.cell}/>
               }
               const dateStr=`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              // 완료된 할일은 완료한 날 칸에, 나머지는 시작일 칸에
-              const dayTodos = todos.filter((todo) => {
-                const cellDate = todo.status === "done" ? todo.completedAt ?? todo.date : todo.date;
-                return cellDate === dateStr;
-              });
+              // 완료 여부와 무관하게 시작일 칸에 표시 (완료는 아래에서 ✓로)
+              const dayTodos = todos.filter((todo) => todo.date === dateStr);
               return (
                 <div key={i} className={styles.cell} onClick={() => onSelectDate(dateStr)}>
                   <span className={styles.dayNum}>{day}</span>
                   <ul className={styles.todoList}>
                     {dayTodos.map((todo) => (
                       <li key={todo.id} className={`${styles.todoItem} ${STATUS_STYLE[todo.status]}`}>
-                        {todo.title}
+                        {todo.status === "done" ? "✓ " : ""}{todo.title}
                       </li>
                     ))}
                   </ul>

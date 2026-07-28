@@ -7,10 +7,25 @@ import ConfirmModal from './components/ConfirmModal';
 import Calendar from './components/Calendar';
 import Kanban from "./components/Kanban";
 
+// 시작~완료 사이 근무일 수 (주말 제외, 같은 날이면 0)
+function workdaysBetween(start: string, end: string) {
+  let count = 0;
+  const cur = new Date(start);
+  const last = new Date(end);
+  while (cur < last) {
+    cur.setDate(cur.getDate() + 1);        // 다음 날로 한 칸씩
+    const dow = cur.getDay();              // 0=일, 6=토
+    if (dow !== 0 && dow !== 6) count++;   // 주말 아니면 카운트
+  }
+  return count;
+}
+
 function App() {
   const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [editDate, setEditDate] = useState("");            // 편집 중 시작일
+  const [editCompletedAt, setEditCompletedAt] = useState("");   // 편집 중 완료일(완료된 할일만)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewDate, setViewDate] = useState(new Date());        // 캘린더가 지금 보고 있는 월
@@ -28,7 +43,7 @@ function App() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["todos"] });
   const addM    = useMutation({ mutationFn: addTodo, onSuccess: invalidate });
   const updateM = useMutation({ 
-    mutationFn: (v: { id: string; patch: { title: string; status: TodoStatus } }) =>
+    mutationFn: (v: { id: string; patch: { title: string; status: TodoStatus; date: string; completedAt?: string | null } }) =>
       updateTodo(v.id, v.patch),
     onMutate : async (v) =>{
       await queryClient.cancelQueries({queryKey:["todos"]});
@@ -64,14 +79,22 @@ function App() {
     addM.mutate({ title: input, date: selectedDate, status: "todo" });
     setInput("");
   };
-  const startEdit = (id: string, currentTitle: string) => {
-    setEditingId(id);
-    setEditText(currentTitle);
+  const startEdit = (todo: Todo) => {
+    setEditingId(todo.id);
+    setEditText(todo.title);
+    setEditDate(todo.date);
+    setEditCompletedAt(todo.completedAt ?? "");
   };
   const saveEdit = (id: string) => {
     if (editText.trim() === "") return;
     const t = todos.find((x) => x.id === id);
-    updateM.mutate({ id, patch: { title: editText, status: t?.status ?? "todo" } });
+    const status = t?.status ?? "todo";
+    // 완료된 할일만 완료일을 직접 실어 보냄(수동). 아니면 자동 처리에 맡김
+    const patch =
+      status === "done"
+        ? { title: editText, status, date: editDate, completedAt: editCompletedAt || null }
+        : { title: editText, status, date: editDate };
+    updateM.mutate({ id, patch });
     setEditingId(null);
   };
   const cancelEdit = () => setEditingId(null);
@@ -83,7 +106,8 @@ function App() {
   const closeModal = () => setDeleteTargetId(null);
   const changeStatus = (id: string, status: TodoStatus) => {
     const t = todos.find((x) => x.id === id);
-    updateM.mutate({ id, patch: { title: t?.title ?? "", status } });
+    // completedAt 안 실어 보냄 → 서버가 자동 처리(옮긴 날 기록)
+    updateM.mutate({ id, patch: { title: t?.title ?? "", status, date: t?.date ?? "" } });
   };
 
   // 선택한 날짜의 할일 - priority 낮은 순(위=1순위)으로 정렬
@@ -127,33 +151,60 @@ function App() {
             <h2>{month}월 {day}일의 할일</h2>
             <div className="formWrap">
               <input id="new-todo" type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={`${month}월 ${day}일의 할일을 입력하세요`}/>
-              <button type="button" onClick={handleAdd}>추가</button>
+              <button type="button" className="addBtn" onClick={handleAdd}>추가</button>
             </div>
-            <ol>
-              {dayTodos.map((todo) => (
+            {dayTodos.length === 0 ? (
+              <p className="emptyMsg">할일이 없어요. 위에서 추가해보세요.</p>
+            ) : (
+            <ol className="todoList">
+              {dayTodos.map((todo) => {
+                const dur = todo.completedAt ? workdaysBetween(todo.date, todo.completedAt) : null;
+                return (
                   <li
                     key={todo.id}
+                    className="todoItem"
                     draggable={editingId !== todo.id}
                     onDragStart={() => setDragId(todo.id)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => handleDrop(todo.id)}
                   >
                     {editingId === todo.id ? (
-                      <>
-                        <input type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
-                        <button type="button" onClick={() => saveEdit(todo.id)}>저장</button>
-                        <button type="button" onClick={cancelEdit}>취소</button>
-                      </>
+                      <div className="editForm">
+                        <input className="editTitle" type="text" value={editText} onChange={(e) => setEditText(e.target.value)} />
+                        <div className="editDates">
+                          <label>시작일<input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} /></label>
+                          {todo.status === "done" && (
+                            <label>완료일<input type="date" value={editCompletedAt} onChange={(e) => setEditCompletedAt(e.target.value)} /></label>
+                          )}
+                        </div>
+                        <div className="rowActions">
+                          <button type="button" className="primaryBtn" onClick={() => saveEdit(todo.id)}>저장</button>
+                          <button type="button" className="ghostBtn" onClick={cancelEdit}>취소</button>
+                        </div>
+                      </div>
                     ) : (
                       <>
-                        {todo.title} - {STATUS_LABELS[todo.status]}
-                        <button type="button" onClick={() => startEdit(todo.id, todo.title)}>수정</button>
-                        <button type="button" onClick={() => askDelete(todo.id)}>삭제</button>
+                        <div className="todoRow">
+                          <span className={`todoTitle ${todo.status === "done" ? "isDone" : ""}`}>{todo.title}</span>
+                          <span className={`statusBadge ${todo.status}`}>{STATUS_LABELS[todo.status]}</span>
+                          <div className="rowActions">
+                            <button type="button" className="ghostBtn" onClick={() => startEdit(todo)}>수정</button>
+                            <button type="button" className="ghostBtn danger" onClick={() => askDelete(todo.id)}>삭제</button>
+                          </div>
+                        </div>
+                        <div className="dateLine">
+                          <span>시작 {todo.date}</span>
+                          {todo.completedAt && (
+                            <span className="doneInfo">완료 {todo.completedAt}<span className="durPill">{dur === 0 ? "당일" : `${dur}일`}</span></span>
+                          )}
+                        </div>
                       </>
                     )}
                   </li>
-                ))}
+                );
+              })}
             </ol>
+            )}
           </section>
         )}
         </div>

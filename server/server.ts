@@ -36,17 +36,24 @@ if (count.n === 0){
 }
 const listStmt = db.prepare("SELECT * FROM todos ORDER BY date, priority");
 const insertStmt = db.prepare("INSERT INTO todos(id, title, date, status, priority) VALUES(?,?,?,?,?)");
-// 완료로 바뀌면 오늘 날짜 기록, 완료에서 빠지면 지움, 그대로면 유지
+// [자동] 칸반 드래그 등 - 완료 전환 시 오늘 찍고, 완료 해제 시 지움, 그대로면 유지
 // :status 처럼 '이름 있는 파라미터'라 여러 번 써도 값은 한 번만 넘기면 됨
-const updateStmt = db.prepare(`
+const updateAutoStmt = db.prepare(`
 	UPDATE todos
 	SET title = :title,
+	    date = :date,
 	    status = :status,
 	    completedAt = CASE
 	      WHEN :status = 'done' AND completedAt IS NULL THEN date('now','localtime')
 	      WHEN :status <> 'done' THEN NULL
 	      ELSE completedAt
 	    END
+	WHERE id = :id
+`);
+// [수동] 편집 폼 - 완료일을 클라이언트가 직접 지정(빈 값이면 null)
+const updateManualStmt = db.prepare(`
+	UPDATE todos
+	SET title = :title, date = :date, status = :status, completedAt = :completedAt
 	WHERE id = :id
 `);
 const deleteStmt = db.prepare("DELETE FROM todos WHERE id = ?");
@@ -74,8 +81,15 @@ app.put("/api/todos/reorder", (req, res) => {
 	res.json({ ok: true });
 });
 app.put("/api/todos/:id",(req, res) => {
-	const{title, status} =req.body;
-	updateStmt.run({ title, status, id: req.params.id });
+	const{title, date, status, completedAt} =req.body;
+	const id = req.params.id;
+	if ("completedAt" in req.body) {
+		// 편집 폼에서 완료일을 직접 보냄 → 그대로 저장(빈 값이면 null)
+		updateManualStmt.run({ title, date, status, completedAt: completedAt || null, id });
+	} else {
+		// 칸반 드래그 등 → 완료일 자동 처리
+		updateAutoStmt.run({ title, date, status, id });
+	}
 	res.json({ok:true});
 })
 app.delete("/api/todos/:id", (req,res)=>{

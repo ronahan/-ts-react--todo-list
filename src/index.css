@@ -19,9 +19,45 @@ body {
   flex: 1;                   /* 남는 가로 공간 차지 (오른쪽) */
   background: #fff;
   border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
+.dayDetail h2 {
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  border-bottom: 2px solid #f1f5f9;
+}
+.formWrap {
+  display: flex;
+  gap: 8px;
+}
+.formWrap input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.formWrap input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.addBtn {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.addBtn:hover { background: #1d4ed8; }
 .calendar {
   width: 360px;          /* 560 → 360 */
   flex-shrink: 0;        /* topRow에서 안 찌그러지게 */
@@ -30,16 +66,148 @@ body {
   min-height: 56px;      /* 72 → 56 */
   /* 나머지 그대로 */
 }
-.dayDetail ul {
-  list-style: none;   /* ← 앞의 점 제거 */
-  padding: 0;         /* ← 점 자리 왼쪽 여백도 제거 */
-  margin: 12px 0 0;
+.todoList {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.dayDetail li {
+.todoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  background: #fff;
+  cursor: grab;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.todoItem:hover {
+  border-color: #dbe3ef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.todoRow {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.todoTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+}
+.todoTitle.isDone {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+.statusBadge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.statusBadge.todo  { background: #e0f2fe; color: #0369a1; }
+.statusBadge.doing { background: #dbeafe; color: #1d4ed8; }
+.statusBadge.done  { background: #dcfce7; color: #15803d; }
+
+.rowActions {
+  margin-left: auto;    /* 버튼을 오른쪽으로 밀기 */
+  display: flex;
+  gap: 4px;
+}
+.ghostBtn {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ghostBtn:hover { background: #f9fafb; color: #374151; }
+.ghostBtn.danger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.primaryBtn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primaryBtn:hover { background: #1d4ed8; }
+
+.dateLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.doneInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+}
+.durPill {
+  padding: 1px 8px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.editTitle {
+  padding: 8px 10px;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.editTitle:focus,
+.editDates input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.editDates {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.editDates label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.editDates input {
   padding: 6px 8px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;    /* 글씨 좀 작게 */
+  border: 1px solid #dcdfe4;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.emptyMsg {
+  margin: 20px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
 }

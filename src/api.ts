@@ -13,7 +13,7 @@ export async function addTodo(todo:{title:string; date :string; status :TodoStat
     });
     return res.json();
 }
-export async function updateTodo(id:string, patch:{title: string; status: TodoStatus }) {
+export async function updateTodo(id:string, patch:{title: string; status: TodoStatus; date: string; completedAt?: string | null }) {
     const res = await fetch(`${BASE}/${id}`,{
         method:"PUT",
         headers:{"Content-Type":"application/json"},
